@@ -86,23 +86,25 @@ class Bomb(Object):
         else:
             return False
 
-    def kaboom(self, plane):
+    def kaboom(self, plane, power: int = 1, extent: int = 1):
         dx = [0, 1, 0, -1, 0]
         dy = [0, 0, 1, 0, -1]
         for i in range(len(dx)):
-            y = self.pos[0] + dy[i]
-            x = self.pos[1] + dx[i]
-            if 0 <= y < plane.object_plane.shape[0] and 0 <= x < plane.object_plane.shape[1]:
-                if isinstance(plane.object_plane[y][x], Obstacle):
-                    if plane.object_plane[y][x].damage() == 0:
-                        plane.object_plane[y][x] = EmptyTile()
-                elif isinstance(plane.character_plane[y][x], Character):
-                    plane.character_plane[y][x].health -= 1
-                    plane.object_plane[y][x] = Fire()
-                elif isinstance(plane.object_plane[y][x], Bomb) and (y != self.pos[0] or x != self.pos[1]):
-                    pass
-                else:
-                    plane.object_plane[y][x] = Fire()
+            for j in range(1, extent + 1):
+                y = self.pos[0] + dy[i] * j
+                x = self.pos[1] + dx[i] * j
+                if 0 <= y < plane.object_plane.shape[0] and 0 <= x < plane.object_plane.shape[1]:
+                    if isinstance(plane.object_plane[y][x], Obstacle):
+                        if -10 < plane.object_plane[y][x].damage(power) <= 0:
+                            plane.object_plane[y][x] = EmptyTile()
+                        break
+                    elif isinstance(plane.character_plane[y][x], Character):
+                        plane.character_plane[y][x].health -= power
+                        plane.object_plane[y][x] = Fire()
+                    elif isinstance(plane.object_plane[y][x], Bomb) and (y != self.pos[0] or x != self.pos[1]):
+                        pass
+                    else:
+                        plane.object_plane[y][x] = Fire()
 
 
 class Fire(Object):
@@ -124,9 +126,9 @@ class Agent(Character):
 
 
 class Obstacle(Object):
-    def __init__(self, health: int = -1):
+    def __init__(self, health: int = -10):
         self.health = health
-        if health == -1:
+        if health == -10:
             super().__init__(shape='#')
         elif health == 1:
             super().__init__(shape='1')
@@ -137,8 +139,8 @@ class Obstacle(Object):
         else:
             raise ValueError('Wrong obstacles health value')
 
-    def damage(self):
-        self.health -= 1
+    def damage(self, dmg: int = 1):
+        self.health -= dmg
         if self.health == 1:
             self.shape = '1'
         elif self.health == 2:
