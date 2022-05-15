@@ -18,7 +18,7 @@ class Plane:
                 if y % 2 == 1 and x % 2 == 1 and y > 0 and x > 0:
                     self.object_plane[y][x] = Obstacle()
                 else:
-                    self.object_plane[y][x] = EmptyTile()
+                    self.generate_obstacles(y, x)
         yc, xc = self.character_plane.shape[0] - 1, int((self.character_plane.shape[1] - 1) / 2)
         self.player = Player(yc, xc)
         self.character_plane[yc][xc] = self.player
@@ -29,7 +29,7 @@ class Plane:
             for x in range(merged_plane.shape[1]):
                 if isinstance(merged_plane[y][x], EmptyTile):
                     merged_plane[y][x] = self.object_plane[y][x]
-        return str(merged_plane)
+        return str(merged_plane) + f'\nHP: {self.player.health}'
 
     def update(self):
         for y in range(self.object_plane.shape[0]):
@@ -40,6 +40,14 @@ class Plane:
                 elif isinstance(self.object_plane[y][x], Fire):
                     if self.object_plane[y][x].update():
                         self.object_plane[y][x] = EmptyTile()
+
+    def generate_obstacles(self, y, x):
+        random = np.random.randint(0, 5)
+        if random == 0:
+            random_type = np.random.randint(1, 4)
+            self.object_plane[y][x] = Obstacle(random_type)
+        else:
+            self.object_plane[y][x] = EmptyTile()
 
 
 class Object:
