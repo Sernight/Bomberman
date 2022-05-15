@@ -173,6 +173,10 @@ class Agent(Character):
         dy = np.random.randint(-1, 2)
         # randomize planting bomb
         self.move(plane, dy, dx)
+        if self.type >= 3:
+            plant = np.random.randint(0, 5)
+            if plant == 0:
+                self.plant_bomb(plane)
         # returns True when should be destroyed
         if self.health <= 0:
             return True
