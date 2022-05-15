@@ -61,6 +61,7 @@ class Plane:
                + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
     def update(self):
+        global agents_count
         for ind, obj in np.ndenumerate(self.object_plane):
             y, x = ind
             if isinstance(obj, Bomb):
@@ -69,9 +70,17 @@ class Plane:
             elif isinstance(obj, Fire):
                 if self.object_plane[y][x].update():
                     self.object_plane[y][x] = EmptyTile()
+        to_delete = list()
         for ind, agent in np.ndenumerate(self.agents):
             y, x = agent.pos
-            self.character_plane[y][x] = self.agents[ind]
+            if self.agents[ind].health <= 0:
+                to_delete.append(ind)
+                self.character_plane[y][x] = EmptyTile()
+                agents_count -= 1
+            else:
+                self.character_plane[y][x] = self.agents[ind]
+        self.agents = np.delete(self.agents, to_delete)
+
         self.character_plane[self.player.pos[0]][self.player.pos[1]] = self.player
 
     def generate_obstacles(self, y, x):
@@ -321,15 +330,10 @@ def keyboard_handler(plane: Plane):
 
 
 def agent_handler(plane: Plane):
-    global agents_count
+    # global agents_count
     while True:
-        for ind, obj in np.ndenumerate(plane.character_plane):
-            y, x = ind
-            if isinstance(obj, Agent):
-                if plane.character_plane[y][x].update(plane):
-                    agents_count -= 1
-                    np.delete(plane.agents, ind)
-                    plane.character_plane[y][x] = EmptyTile()
+        for ind, agent in np.ndenumerate(plane.agents):
+            plane.agents[ind].update(plane)
         sleep(0.5)
 
 
