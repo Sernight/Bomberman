@@ -30,8 +30,8 @@ class Plane:
                 if isinstance(merged_plane[y][x], EmptyTile):
                     merged_plane[y][x] = self.object_plane[y][x]
         return str(merged_plane) \
-            + f'\nHP: {self.player.health}' \
-            + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
+               + f'\nHP: {self.player.health}' \
+               + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
     def update(self):
         for y in range(self.object_plane.shape[0]):
@@ -42,6 +42,9 @@ class Plane:
                 elif isinstance(self.object_plane[y][x], Fire):
                     if self.object_plane[y][x].update():
                         self.object_plane[y][x] = EmptyTile()
+                if isinstance(self.character_plane[y][x], Agent):
+                    if self.character_plane[y][x].update(self):
+                        self.character_plane[y][x].EmptyTile()
 
     def generate_obstacles(self, y, x):
         random = np.random.randint(0, 5)
@@ -50,6 +53,13 @@ class Plane:
             self.object_plane[y][x] = Obstacle(random_type)
         else:
             self.object_plane[y][x] = EmptyTile()
+            self.generate_agents(y, x)
+
+    def generate_agents(self, y, x):
+        random = np.random.randint(0, 5)
+        if random == 0:
+            random_type = np.random.randint(0, 6)
+            self.character_plane[y][x] = Agent(y, x, random_type)
 
 
 class Object:
@@ -90,7 +100,7 @@ class Character(Object):
     def get_powerup(self, typeof):
         if typeof == 1:
             self.health += 1
-        elif typeof == 2:
+        elif typeof == 2 and self.bomb_power != 5:
             self.bomb_extent = 4
         elif typeof == 3:
             self.bomb_extent = 5
@@ -100,8 +110,51 @@ class Character(Object):
 
 
 class Agent(Character):
-    def __init__(self, y0: int = 0, x0: int = 0):
-        super().__init__(y0, x0, 'a', 1)
+    """
+    typeof:
+        [0, 2] - agent without bomb
+        [3, 5] - agent with bomb
+        0, 3   - move range 3
+        1, 4   - move range 5
+        2, 5   - move range 7
+    """
+    def __init__(self, y0: int = 0, x0: int = 0, typeof: int = 0):
+        self.type = typeof
+        if self.type >= 3:
+            super().__init__(y0, x0, 'A', 1)
+        else:
+            super().__init__(y0, x0, 'a', 1)
+
+        axis = np.random.randint(0, 2)
+        a_range = 0
+        if self.type in [0, 3]:
+            a_range = 3
+        elif self.type in [1, 4]:
+            a_range = 5
+        elif self.type in [2, 5]:
+            a_range = 7
+        if axis == 0:
+            self.y_range = (y0 - a_range, y0 + a_range)
+            self.x_range = (x0, x0)
+        else:
+            self.y_range = (y0, y0)
+            self.x_range = (x0 - a_range, x0 + a_range)
+
+    def move(self, plane: Plane, dy: int = 0, dx: int = 0):
+        temp_pos = self.pos + np.array([dy, dx])
+        if self.y_range[0] <= temp_pos[0] <= self.y_range[1] and self.x_range[0] <= temp_pos[1] <= self.x_range[1]:
+            super().move(plane, dy, dx)
+
+    def update(self, plane: Plane):
+        dx = np.random.randint(-1, 2)
+        dy = np.random.randint(-1, 2)
+        # randomize planting bomb
+        self.move(plane, dy, dx)
+        # returns True when should be destroyed
+        if self.health <= 0:
+            return True
+        else:
+            return False
 
 
 class Player(Character):
