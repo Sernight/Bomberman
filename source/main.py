@@ -8,6 +8,9 @@ import atexit
 from getch import getch
 from kbhit import *
 
+map_size = (81, 121)
+cut_size = (21, 41)
+
 
 class Plane:
     def __init__(self, ys: int, xs: int):
@@ -24,12 +27,30 @@ class Plane:
         self.character_plane[yc][xc] = self.player
 
     def __str__(self):
+        global cut_size
         merged_plane = np.copy(self.character_plane)
         for y in range(merged_plane.shape[0]):
             for x in range(merged_plane.shape[1]):
                 if isinstance(merged_plane[y][x], EmptyTile):
                     merged_plane[y][x] = self.object_plane[y][x]
-        return str(merged_plane) \
+
+        # cutting fragment of map
+        center = (self.player.pos[0], self.player.pos[1])
+        if center[0] - int(cut_size[0] / 2) < 0:
+            cut_y = (0, cut_size[0])
+        elif center[0] + int(cut_size[0] / 2) >= merged_plane.shape[0]:
+            cut_y = (merged_plane.shape[0] - cut_size[0], merged_plane.shape[0])
+        else:
+            cut_y = (center[0] - int(cut_size[0] / 2), center[0] + int(cut_size[0] / 2) + 1)
+
+        if center[1] - int(cut_size[1] / 2) < 0:
+            cut_x = (0, cut_size[1])
+        elif center[1] + int(cut_size[1] / 2) >= merged_plane.shape[1]:
+            cut_x = (merged_plane.shape[1] - cut_size[1], merged_plane.shape[1])
+        else:
+            cut_x = (center[1] - int(cut_size[1] / 2), center[1] + int(cut_size[1] / 2) + 1)
+
+        return str(merged_plane[cut_y[0]:cut_y[1], cut_x[0]:cut_x[1]]) \
                + f'\nHP: {self.player.health}' \
                + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
@@ -42,9 +63,6 @@ class Plane:
                 elif isinstance(self.object_plane[y][x], Fire):
                     if self.object_plane[y][x].update():
                         self.object_plane[y][x] = EmptyTile()
-                if isinstance(self.character_plane[y][x], Agent):
-                    if self.character_plane[y][x].update(self):
-                        self.character_plane[y][x].EmptyTile()
 
     def generate_obstacles(self, y, x):
         random = np.random.randint(0, 5)
@@ -81,7 +99,8 @@ class Character(Object):
     def move(self, plane: Plane, dy: int = 0, dx: int = 0):
         temp_pos = self.pos + np.array([dy, dx])
         if 0 <= temp_pos[0] < plane.character_plane.shape[0] and 0 <= temp_pos[1] < plane.character_plane.shape[1]:
-            if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle):
+            if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle) and not \
+                    isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Character):
                 if isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Powerup):
                     if isinstance(self, Player):
                         typeof = plane.object_plane[temp_pos[0]][temp_pos[1]].type
@@ -100,10 +119,10 @@ class Character(Object):
     def get_powerup(self, typeof):
         if typeof == 1:
             self.health += 1
-        elif typeof == 2 and self.bomb_power != 5:
-            self.bomb_extent = 4
+        elif typeof == 2 and self.bomb_power != 3:
+            self.bomb_extent = 2
         elif typeof == 3:
-            self.bomb_extent = 5
+            self.bomb_extent = 3
         elif typeof == 4:
             if self.bomb_power < 3:
                 self.bomb_power += 1
@@ -118,6 +137,7 @@ class Agent(Character):
         1, 4   - move range 5
         2, 5   - move range 7
     """
+
     def __init__(self, y0: int = 0, x0: int = 0, typeof: int = 0):
         self.type = typeof
         if self.type >= 3:
@@ -279,13 +299,27 @@ def keyboard_handler(plane: Plane):
                 plane.player.plant_bomb(plane)
 
 
+def agent_handler(plane: Plane):
+    while True:
+        for y in range(plane.object_plane.shape[0]):
+            for x in range(plane.object_plane.shape[1]):
+                if isinstance(plane.character_plane[y][x], Agent):
+                    if plane.character_plane[y][x].update(plane):
+                        plane.character_plane[y][x] = EmptyTile()
+        sleep(0.5)
+
+
 def main():
     atexit.register(set_normal_term)
     set_curses_term()
-    plane = Plane(11, 11)
+    np.set_printoptions(threshold=np.inf, linewidth=125)
+    plane = Plane(map_size[0], map_size[1])
     kb_thread = threading.Thread(target=keyboard_handler, args=[plane])
     kb_thread.daemon = True
     kb_thread.start()
+    agents_thread = threading.Thread(target=agent_handler, args=[plane])
+    agents_thread.daemon = True
+    agents_thread.start()
     while True:
         os.system('clear')
         plane.update()
