@@ -2,7 +2,6 @@
 import numpy as np
 import threading
 from time import sleep
-import os
 
 import atexit
 from getch import getch
