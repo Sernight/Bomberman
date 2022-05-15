@@ -79,7 +79,7 @@ class Plane:
 
     def generate_obstacles(self, y, x):
         global obstacles_density
-        random = np.random.uniform(0, 1)
+        random = np.random.random()
         if random <= obstacles_density:
             random_type = np.random.randint(1, 4)
             self.object_plane[y][x] = Obstacle(random_type)
@@ -90,7 +90,7 @@ class Plane:
     def generate_agents(self, y, x):
         global agents_density
         global agents_count
-        random = np.random.uniform(0, 1)
+        random = np.random.random()
         if random <= agents_density:
             random_type = np.random.randint(0, 6)
             agents_count += 1
@@ -204,7 +204,7 @@ class Agent(Character):
         # randomize planting bomb
         self.move(plane, dy, dx)
         if self.type >= 3:
-            plant = np.random.uniform(0, 1)
+            plant = np.random.random()
             if plant <= planting_density:
                 self.plant_bomb(plane)
         # returns True when should be destroyed
@@ -244,7 +244,7 @@ class Bomb(Object):
                 if 0 <= y < plane.object_plane.shape[0] and 0 <= x < plane.object_plane.shape[1]:
                     if isinstance(plane.object_plane[y][x], Obstacle):
                         if -10 < plane.object_plane[y][x].damage(self.power) <= 0:
-                            is_powerup = np.random.uniform(0, 1)
+                            is_powerup = np.random.random()
                             if is_powerup <= powerup_density:
                                 powerup_type = np.random.randint(1, 5)
                                 plane.object_plane[y][x] = Powerup(powerup_type)
