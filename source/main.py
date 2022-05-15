@@ -11,6 +11,13 @@ map_size = (81, 121)
 cut_size = (21, 41)
 agents_count = 0
 
+# probabilities
+obstacles_density = 0.2
+agents_density = 0.1
+powerup_density = 0.3
+
+planting_density = 0.1
+
 
 # brak nachodzenia na siebie gracza i agenta
 # agent nie stawia bomb
@@ -85,8 +92,9 @@ class Plane:
         self.character_plane[self.player.pos[0]][self.player.pos[1]] = self.player
 
     def generate_obstacles(self, y, x):
-        random = np.random.randint(0, 5)
-        if random == 0:
+        global obstacles_density
+        random = np.random.uniform(0, 1)
+        if random <= obstacles_density:
             random_type = np.random.randint(1, 4)
             self.object_plane[y][x] = Obstacle(random_type)
         else:
@@ -94,9 +102,10 @@ class Plane:
             self.generate_agents(y, x)
 
     def generate_agents(self, y, x):
+        global agents_density
         global agents_count
-        random = np.random.randint(0, 5)
-        if random == 0:
+        random = np.random.uniform(0, 1)
+        if random <= agents_density:
             random_type = np.random.randint(0, 6)
             agents_count += 1
             agent = Agent(y, x, random_type)
@@ -172,7 +181,17 @@ class Agent(Character):
         else:
             super().__init__(y0, x0, 'a', 1)
 
-        axis = np.random.randint(0, 2)
+        if y0 == 0:
+            axis = 1
+        elif x0 == 0:
+            axis = 0
+        elif y0 % 2:
+            axis = 0
+        elif x0 % 2:
+            axis = 1
+        else:
+            axis = np.random.randint(0, 2)
+
         a_range = 0
         if self.type in [0, 3]:
             a_range = 3
@@ -193,13 +212,14 @@ class Agent(Character):
             super().move(plane, dy, dx)
 
     def update(self, plane: Plane):
+        global planting_density
         dx = np.random.randint(-1, 2)
         dy = np.random.randint(-1, 2)
         # randomize planting bomb
         self.move(plane, dy, dx)
         if self.type >= 3:
-            plant = np.random.randint(0, 5)
-            if plant == 0:
+            plant = np.random.uniform(0, 1)
+            if plant <= planting_density:
                 self.plant_bomb(plane)
         # returns True when should be destroyed
         if self.health <= 0:
@@ -228,6 +248,7 @@ class Bomb(Object):
             return False
 
     def kaboom(self, plane):
+        global powerup_density
         dx = [0, 1, 0, -1, 0]
         dy = [0, 0, 1, 0, -1]
         for i in range(len(dx)):
@@ -237,8 +258,8 @@ class Bomb(Object):
                 if 0 <= y < plane.object_plane.shape[0] and 0 <= x < plane.object_plane.shape[1]:
                     if isinstance(plane.object_plane[y][x], Obstacle):
                         if -10 < plane.object_plane[y][x].damage(self.power) <= 0:
-                            is_powerup = np.random.randint(0, 3)
-                            if is_powerup == 0:
+                            is_powerup = np.random.uniform(0, 1)
+                            if is_powerup <= powerup_density:
                                 powerup_type = np.random.randint(1, 5)
                                 plane.object_plane[y][x] = Powerup(powerup_type)
                             else:
