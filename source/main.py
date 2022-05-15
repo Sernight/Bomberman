@@ -9,6 +9,7 @@ from kbhit import *
 
 map_size = (81, 121)
 cut_size = (21, 41)
+agents_count = 0
 
 
 # brak nachodzenia na siebie gracza i agenta
@@ -19,6 +20,7 @@ class Plane:
     def __init__(self, ys: int, xs: int):
         self.object_plane = np.zeros((ys, xs), dtype=Object)
         self.character_plane = np.full((ys, xs), EmptyTile(), dtype=Object)
+        self.agents = list()
         for ind, obj in np.ndenumerate(self.object_plane):
             y, x = ind
             if y % 2 == 1 and x % 2 == 1 and y > 0 and x > 0:
@@ -27,10 +29,11 @@ class Plane:
                 self.generate_obstacles(y, x)
         yc, xc = self.character_plane.shape[0] - 1, int((self.character_plane.shape[1] - 1) / 2)
         self.player = Player(yc, xc)
+        self.agents = np.array(self.agents)
         self.character_plane[yc][xc] = self.player
 
     def __str__(self):
-        global cut_size
+        global cut_size, agents_count
         merged_plane = np.copy(self.character_plane)
         for ind, obj in np.ndenumerate(self.object_plane):
             y, x = ind
@@ -54,7 +57,7 @@ class Plane:
             cut_x = (center[1] - int(cut_size[1] / 2), center[1] + int(cut_size[1] / 2) + 1)
 
         return str(merged_plane[cut_y[0]:cut_y[1], cut_x[0]:cut_x[1]]) \
-               + f'\nHP: {self.player.health}' \
+               + f'\nHP: {self.player.health}\t|\t Remaining ghosts: {agents_count}' \
                + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
     def update(self):
@@ -66,6 +69,10 @@ class Plane:
             elif isinstance(obj, Fire):
                 if self.object_plane[y][x].update():
                     self.object_plane[y][x] = EmptyTile()
+        for ind, agent in np.ndenumerate(self.agents):
+            y, x = agent.pos
+            self.character_plane[y][x] = self.agents[ind]
+        self.character_plane[self.player.pos[0]][self.player.pos[1]] = self.player
 
     def generate_obstacles(self, y, x):
         random = np.random.randint(0, 5)
@@ -77,10 +84,14 @@ class Plane:
             self.generate_agents(y, x)
 
     def generate_agents(self, y, x):
+        global agents_count
         random = np.random.randint(0, 5)
         if random == 0:
             random_type = np.random.randint(0, 6)
-            self.character_plane[y][x] = Agent(y, x, random_type)
+            agents_count += 1
+            agent = Agent(y, x, random_type)
+            self.agents.append(agent)
+            self.character_plane[y][x] = self.agents[-1]
 
 
 class Object:
@@ -102,8 +113,11 @@ class Character(Object):
     def move(self, plane: Plane, dy: int = 0, dx: int = 0):
         temp_pos = self.pos + np.array([dy, dx])
         if 0 <= temp_pos[0] < plane.character_plane.shape[0] and 0 <= temp_pos[1] < plane.character_plane.shape[1]:
-            if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle) and not \
-                    isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Character):
+            if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle):
+                if isinstance(self, Player) and isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Agent):
+                    self.health -= 1
+                elif isinstance(self, Agent) and isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Agent):
+                    plane.character_plane[temp_pos[0]][temp_pos[1]].health -= 1
                 if isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Powerup):
                     if isinstance(self, Player):
                         typeof = plane.object_plane[temp_pos[0]][temp_pos[1]].type
@@ -186,7 +200,7 @@ class Agent(Character):
 
 class Player(Character):
     def __init__(self, y0: int = 0, x0: int = 0):
-        super().__init__(y0, x0, '0', 3)
+        super().__init__(y0, x0, '\033[93m0\033[0m', 3)
 
 
 class Bomb(Object):
@@ -307,11 +321,14 @@ def keyboard_handler(plane: Plane):
 
 
 def agent_handler(plane: Plane):
+    global agents_count
     while True:
         for ind, obj in np.ndenumerate(plane.character_plane):
             y, x = ind
             if isinstance(obj, Agent):
                 if plane.character_plane[y][x].update(plane):
+                    agents_count -= 1
+                    np.delete(plane.agents, ind)
                     plane.character_plane[y][x] = EmptyTile()
         sleep(0.5)
 
