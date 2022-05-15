@@ -29,7 +29,9 @@ class Plane:
             for x in range(merged_plane.shape[1]):
                 if isinstance(merged_plane[y][x], EmptyTile):
                     merged_plane[y][x] = self.object_plane[y][x]
-        return str(merged_plane) + f'\nHP: {self.player.health}'
+        return str(merged_plane) \
+            + f'\nHP: {self.player.health}' \
+            + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
     def update(self):
         for y in range(self.object_plane.shape[0]):
@@ -60,21 +62,46 @@ class Object:
 
 
 class Character(Object):
-    def __init__(self, y: int, x: int, shape: str, health: int):
+    def __init__(self, y: int, x: int, shape: str, health: int, bomb_power: int = 1, bomb_extent: int = 1):
         super().__init__(y, x, shape)
         self.health = health
+        self.bomb_power = bomb_power
+        self.bomb_extent = bomb_extent
 
     def move(self, plane: Plane, dy: int = 0, dx: int = 0):
         temp_pos = self.pos + np.array([dy, dx])
         if 0 <= temp_pos[0] < plane.character_plane.shape[0] and 0 <= temp_pos[1] < plane.character_plane.shape[1]:
             if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle):
+                if isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Powerup):
+                    if isinstance(self, Player):
+                        typeof = plane.object_plane[temp_pos[0]][temp_pos[1]].type
+                        self.get_powerup(typeof)
+                    plane.object_plane[temp_pos[0]][temp_pos[1]] = EmptyTile()
                 plane.character_plane[self.pos[0]][self.pos[1]] = EmptyTile()
                 self.pos += np.array([dy, dx])
                 plane.character_plane[self.pos[0]][self.pos[1]] = self
 
     def plant_bomb(self, plane: Plane):
         if not isinstance(plane.object_plane[self.pos[0]][self.pos[1]], Bomb):
-            plane.object_plane[self.pos[0]][self.pos[1]] = Bomb(self.pos[0], self.pos[1])
+            plane.object_plane[self.pos[0]][self.pos[1]] = Bomb(self.pos[0], self.pos[1],
+                                                                power=self.bomb_power,
+                                                                extent=self.bomb_extent)
+
+    def get_powerup(self, typeof):
+        if typeof == 1:
+            self.health += 1
+        elif typeof == 2:
+            self.bomb_extent = 4
+        elif typeof == 3:
+            self.bomb_extent = 5
+        elif typeof == 4:
+            if self.bomb_power < 3:
+                self.bomb_power += 1
+
+
+class Agent(Character):
+    def __init__(self, y0: int = 0, x0: int = 0):
+        super().__init__(y0, x0, 'a', 1)
 
 
 class Player(Character):
@@ -83,9 +110,11 @@ class Player(Character):
 
 
 class Bomb(Object):
-    def __init__(self, y: int, x: int, lifespan: int = 20):
+    def __init__(self, y: int, x: int, lifespan: int = 20, power: int = 1, extent: int = 1):
         super().__init__(y, x, 'x')
         self.timer = lifespan
+        self.power = power
+        self.extent = extent
 
     def update(self):
         self.timer -= 1
@@ -94,20 +123,25 @@ class Bomb(Object):
         else:
             return False
 
-    def kaboom(self, plane, power: int = 1, extent: int = 1):
+    def kaboom(self, plane):
         dx = [0, 1, 0, -1, 0]
         dy = [0, 0, 1, 0, -1]
         for i in range(len(dx)):
-            for j in range(1, extent + 1):
+            for j in range(1, self.extent + 1):
                 y = self.pos[0] + dy[i] * j
                 x = self.pos[1] + dx[i] * j
                 if 0 <= y < plane.object_plane.shape[0] and 0 <= x < plane.object_plane.shape[1]:
                     if isinstance(plane.object_plane[y][x], Obstacle):
-                        if -10 < plane.object_plane[y][x].damage(power) <= 0:
-                            plane.object_plane[y][x] = EmptyTile()
+                        if -10 < plane.object_plane[y][x].damage(self.power) <= 0:
+                            is_powerup = np.random.randint(0, 3)
+                            if is_powerup == 0:
+                                powerup_type = np.random.randint(1, 5)
+                                plane.object_plane[y][x] = Powerup(powerup_type)
+                            else:
+                                plane.object_plane[y][x] = EmptyTile()
                         break
                     elif isinstance(plane.character_plane[y][x], Character):
-                        plane.character_plane[y][x].health -= power
+                        plane.character_plane[y][x].health -= self.power
                         plane.object_plane[y][x] = Fire()
                     elif isinstance(plane.object_plane[y][x], Bomb) and (y != self.pos[0] or x != self.pos[1]):
                         pass
@@ -115,9 +149,24 @@ class Bomb(Object):
                         plane.object_plane[y][x] = Fire()
 
 
+class Powerup(Object):
+    def __init__(self, typeof: int):
+        self.type = typeof
+        if typeof == 1:
+            super().__init__(shape='h')
+        elif typeof == 2:
+            super().__init__(shape='f')
+        elif typeof == 3:
+            super().__init__(shape='e')
+        elif typeof == 4:
+            super().__init__(shape='d')
+        else:
+            raise ValueError('Wrong type of powerup')
+
+
 class Fire(Object):
     def __init__(self, lifespan: int = 5):
-        Object.__init__(self, shape='+')
+        super().__init__(shape='+')
         self.timer = lifespan
 
     def update(self):
@@ -126,11 +175,6 @@ class Fire(Object):
             return True
         else:
             return False
-
-
-class Agent(Character):
-    def __init__(self, y0: int = 0, x0: int = 0):
-        super().__init__(y0, x0, 'a', 1)
 
 
 class Obstacle(Object):
