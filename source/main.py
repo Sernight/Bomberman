@@ -2,26 +2,12 @@
 import numpy as np
 import threading
 from time import sleep
+from configuration import *
 
 import atexit
 from getch import getch
 from kbhit import *
 
-map_size = (81, 121)
-cut_size = (21, 41)
-agents_count = 0
-
-# probabilities
-obstacles_density = 0.2
-agents_density = 0.1
-powerup_density = 0.3
-
-planting_density = 0.1
-
-
-# brak nachodzenia na siebie gracza i agenta
-# agent nie stawia bomb
-# brak nagród
 
 class Plane:
     def __init__(self, ys: int, xs: int):
