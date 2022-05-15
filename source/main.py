@@ -11,16 +11,20 @@ map_size = (81, 121)
 cut_size = (21, 41)
 
 
+# brak nachodzenia na siebie gracza i agenta
+# agent nie stawia bomb
+# brak nagród
+
 class Plane:
     def __init__(self, ys: int, xs: int):
         self.object_plane = np.zeros((ys, xs), dtype=Object)
         self.character_plane = np.full((ys, xs), EmptyTile(), dtype=Object)
-        for y in range(self.object_plane.shape[0]):
-            for x in range(self.object_plane.shape[1]):
-                if y % 2 == 1 and x % 2 == 1 and y > 0 and x > 0:
-                    self.object_plane[y][x] = Obstacle()
-                else:
-                    self.generate_obstacles(y, x)
+        for ind, obj in np.ndenumerate(self.object_plane):
+            y, x = ind
+            if y % 2 == 1 and x % 2 == 1 and y > 0 and x > 0:
+                self.object_plane[y][x] = Obstacle()
+            else:
+                self.generate_obstacles(y, x)
         yc, xc = self.character_plane.shape[0] - 1, int((self.character_plane.shape[1] - 1) / 2)
         self.player = Player(yc, xc)
         self.character_plane[yc][xc] = self.player
@@ -28,10 +32,10 @@ class Plane:
     def __str__(self):
         global cut_size
         merged_plane = np.copy(self.character_plane)
-        for y in range(merged_plane.shape[0]):
-            for x in range(merged_plane.shape[1]):
-                if isinstance(merged_plane[y][x], EmptyTile):
-                    merged_plane[y][x] = self.object_plane[y][x]
+        for ind, obj in np.ndenumerate(self.object_plane):
+            y, x = ind
+            if isinstance(merged_plane[y][x], EmptyTile):
+                merged_plane[y][x] = self.object_plane[y][x]
 
         # cutting fragment of map
         center = (self.player.pos[0], self.player.pos[1])
@@ -54,14 +58,14 @@ class Plane:
                + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
 
     def update(self):
-        for y in range(self.object_plane.shape[0]):
-            for x in range(self.object_plane.shape[1]):
-                if isinstance(self.object_plane[y][x], Bomb):
-                    if self.object_plane[y][x].update():
-                        self.object_plane[y][x].kaboom(self)
-                elif isinstance(self.object_plane[y][x], Fire):
-                    if self.object_plane[y][x].update():
-                        self.object_plane[y][x] = EmptyTile()
+        for ind, obj in np.ndenumerate(self.object_plane):
+            y, x = ind
+            if isinstance(obj, Bomb):
+                if self.object_plane[y][x].update():
+                    self.object_plane[y][x].kaboom(self)
+            elif isinstance(obj, Fire):
+                if self.object_plane[y][x].update():
+                    self.object_plane[y][x] = EmptyTile()
 
     def generate_obstacles(self, y, x):
         random = np.random.randint(0, 5)
@@ -300,11 +304,11 @@ def keyboard_handler(plane: Plane):
 
 def agent_handler(plane: Plane):
     while True:
-        for y in range(plane.object_plane.shape[0]):
-            for x in range(plane.object_plane.shape[1]):
-                if isinstance(plane.character_plane[y][x], Agent):
-                    if plane.character_plane[y][x].update(plane):
-                        plane.character_plane[y][x] = EmptyTile()
+        for ind, obj in np.ndenumerate(plane.character_plane):
+            y, x = ind
+            if isinstance(obj, Agent):
+                if plane.character_plane[y][x].update(plane):
+                    plane.character_plane[y][x] = EmptyTile()
         sleep(0.5)
 
 
