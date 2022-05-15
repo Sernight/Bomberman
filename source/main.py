@@ -70,6 +70,7 @@ class Plane:
             elif isinstance(obj, Fire):
                 if self.object_plane[y][x].update():
                     self.object_plane[y][x] = EmptyTile()
+
         to_delete = list()
         for ind, agent in np.ndenumerate(self.agents):
             y, x = agent.pos
@@ -125,7 +126,7 @@ class Character(Object):
             if not isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Obstacle):
                 if isinstance(self, Player) and isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Agent):
                     self.health -= 1
-                elif isinstance(self, Agent) and isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Agent):
+                elif isinstance(self, Agent) and isinstance(plane.character_plane[temp_pos[0]][temp_pos[1]], Player):
                     plane.character_plane[temp_pos[0]][temp_pos[1]].health -= 1
                 if isinstance(plane.object_plane[temp_pos[0]][temp_pos[1]], Powerup):
                     if isinstance(self, Player):
