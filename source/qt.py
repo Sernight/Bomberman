@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
         self.b_button.clicked.connect(self.mainWidget.plant_bomb)
 
         self.timer = QTimer()
-        self.timer.setInterval(100)
+        self.timer.setInterval(1000 / 30)
         self.timer.timeout.connect(self.update_scene)
         self.timer.start()
 
