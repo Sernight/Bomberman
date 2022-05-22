@@ -5,7 +5,7 @@ import numpy as np
 
 import main as terminal
 from configuration import *
-from PySide2.QtCore import Qt
+from PySide2.QtCore import Qt, QTimer
 from PySide2.QtGui import QPainterPath, QColor, QBrush, QPixmap
 from PySide2.QtWidgets import (
     QGraphicsItem,
@@ -178,7 +178,18 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.resize((cut_size[1] + 1) * tile_size, (cut_size[0] + 1) * tile_size)
-        self.setCentralWidget(MainWidgets())
+        self.mainWidget = MainWidgets()
+        self.setCentralWidget(self.mainWidget)
+
+        self.timer = QTimer()
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.update_scene)
+        self.timer.start()
+
+    def update_scene(self):
+        self.mainWidget.scene.clear()
+        self.mainWidget.plane.update()
+        self.mainWidget.draw_scene()
 
 
 if __name__ == '__main__':
