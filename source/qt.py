@@ -1,12 +1,9 @@
 import sys
-import threading
 
 import numpy as np
-
-import main as terminal
-from configuration import *
-from PySide2.QtCore import Qt, QTimer
-from PySide2.QtGui import QPainterPath, QColor, QBrush, QPixmap
+from PySide2 import QtCore
+from PySide2.QtCore import QTimer
+from PySide2.QtGui import QPainterPath, QIcon
 from PySide2.QtWidgets import (
     QGraphicsItem,
     QPushButton,
@@ -15,9 +12,11 @@ from PySide2.QtWidgets import (
     QVBoxLayout,
     QMainWindow,
     QApplication,
-    QGraphicsView,
-    QGraphicsProxyWidget
+    QGraphicsView
 )
+
+import main as terminal
+from configuration import *
 
 
 class GraphicsItem(QGraphicsItem):
@@ -105,20 +104,10 @@ class Powerup(GraphicsItem):
 
 class GraphicsScene(QGraphicsScene):
     def __init__(self, width: int, height: int):
-        super().__init__(0, 0, width, height)
+        super().__init__(0, -20, width, height)
         self.scene_width = width
         self.scene_height = height
 
-        # self._grid_pattern = QBrush(QColor("#282828"), Qt.Dense7Pattern)
-
-        #     self.setBackgroundBrush(QColor("#393939"))
-        # self.setSceneRect(-self.scene_width // 2, -self.scene_height // 2,
-        #                   self.scene_width, self.scene_height)
-
-    #
-    # def drawBackground(self, painter, rect):
-    #     super().drawBackground(painter, rect)
-    #     painter.fillRect(rect, self._grid_pattern)
     def addItems(self, items: list[GraphicsItem]):
         for item in items:
             self.addItem(item)
@@ -130,10 +119,6 @@ class MainWidgets(QWidget):
 
         self.plane = terminal.Plane(map_size[0], map_size[1])
 
-        agents_thread = threading.Thread(target=terminal.agent_handler, args=[self.plane])
-        agents_thread.daemon = True
-        agents_thread.start()
-
         self.scene = GraphicsScene(cut_size[1] * tile_size, cut_size[0] * tile_size)
         self.view = QGraphicsView(self.scene)
 
@@ -144,6 +129,19 @@ class MainWidgets(QWidget):
         self.draw_scene()
 
         self.scene.update()
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_W:
+            self.plane.player.move(self.plane, -1, 0)
+        elif event.key() == QtCore.Qt.Key_S:
+            self.plane.player.move(self.plane, 1, 0)
+        elif event.key() == QtCore.Qt.Key_A:
+            self.plane.player.move(self.plane, 0, -1)
+        elif event.key() == QtCore.Qt.Key_D:
+            self.plane.player.move(self.plane, 0, 1)
+        elif event.key() == QtCore.Qt.Key_Space:
+            self.plane.player.plant_bomb(self.plane)
+        event.accept()
 
     def draw_scene(self):
         # add solid objects, bombs and fire
@@ -161,6 +159,7 @@ class MainWidgets(QWidget):
                 self.scene.addItem(Fire(ind[1] * tile_size, ind[0] * tile_size))
             elif isinstance(obj, terminal.Powerup):
                 self.scene.addItem(EmptyTile(ind[1] * tile_size, ind[0] * tile_size))
+                self.scene.addItem(Powerup(ind[1] * tile_size, ind[0] * tile_size, obj.type))
 
         # add agents
         for ind, agent in np.ndenumerate(self.plane.agents):
@@ -173,18 +172,65 @@ class MainWidgets(QWidget):
         self.scene.addItem(Player((self.plane.player.pos[1] - offset_x[0]) * tile_size,
                                   (self.plane.player.pos[0] - offset_y[0]) * tile_size))
 
+        # draw players health
+        for i in range(self.plane.player.health):
+            self.scene.addItem(Powerup(i * tile_size, -40, 1))
+
+    def agent_handler(self):
+        # global agents_count
+        for ind, agent in np.ndenumerate(self.plane.agents):
+            self.plane.agents[ind].update(self.plane)
+
+    def move_player(self, dy, dx):
+        self.plane.player.move(self.plane, dy, dx)
+
+    def plant_bomb(self):
+        self.plane.player.plant_bomb(self.plane)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.resize((cut_size[1] + 1) * tile_size, (cut_size[0] + 1) * tile_size)
+        self.resize(cut_size[1] * tile_size + 20, cut_size[0] * tile_size + 60)
         self.mainWidget = MainWidgets()
         self.setCentralWidget(self.mainWidget)
+
+        self.l_button = QPushButton(QIcon('../images/left_arrow.png'), '', self)
+        self.l_button.setGeometry((cut_size[1] - 3) * tile_size + 10,
+                                  (cut_size[0] - 1) * tile_size + 10,
+                                  tile_size, tile_size)
+        self.r_button = QPushButton(QIcon('../images/right_arrow.png'), '', self)
+        self.r_button.setGeometry((cut_size[1] - 1) * tile_size + 10,
+                                  (cut_size[0] - 1) * tile_size + 10,
+                                  tile_size, tile_size)
+        self.d_button = QPushButton(QIcon('../images/bottom_arrow.png'), '', self)
+        self.d_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
+                                  (cut_size[0]) * tile_size + 10,
+                                  tile_size, tile_size)
+        self.u_button = QPushButton(QIcon('../images/top_arrow.png'), '', self)
+        self.u_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
+                                  (cut_size[0] - 2) * tile_size + 10,
+                                  tile_size, tile_size)
+        self.b_button = QPushButton(QIcon('../images/bomb.png'), '', self)
+        self.b_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
+                                  (cut_size[0] - 1) * tile_size + 10,
+                                  tile_size, tile_size)
+
+        self.l_button.clicked.connect(lambda: self.mainWidget.move_player(0, -1))
+        self.r_button.clicked.connect(lambda: self.mainWidget.move_player(0, 1))
+        self.d_button.clicked.connect(lambda: self.mainWidget.move_player(1, 0))
+        self.u_button.clicked.connect(lambda: self.mainWidget.move_player(-1, 0))
+        self.b_button.clicked.connect(self.mainWidget.plant_bomb)
 
         self.timer = QTimer()
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.update_scene)
         self.timer.start()
+
+        self.agent_timer = QTimer()
+        self.agent_timer.setInterval(500)
+        self.agent_timer.timeout.connect(self.mainWidget.agent_handler)
+        self.agent_timer.start()
 
     def update_scene(self):
         self.mainWidget.scene.clear()

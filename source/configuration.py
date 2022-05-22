@@ -7,7 +7,7 @@ obstacles_density = 0.2
 agents_density = 0.1
 powerup_density = 0.3
 
-planting_density = 0.1
+planting_density = 0.05
 
 # pyside
 tile_size = 40
