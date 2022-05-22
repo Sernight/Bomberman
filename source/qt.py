@@ -18,7 +18,7 @@ from PySide2.QtWidgets import (
 import main as terminal
 from configuration import *
 
-import resources.py
+import resources
 
 
 class GraphicsItem(QGraphicsItem):
@@ -49,29 +49,29 @@ class GraphicsItem(QGraphicsItem):
 
 class EmptyTile(GraphicsItem):
     def __init__(self, x, y):
-        super().__init__('../images/dirt.png', x, y)
+        super().__init__(':/dirt', x, y)
 
 
 class Obstacle(GraphicsItem):
     def __init__(self, x, y, health):
         if health == 3:
-            super().__init__('../images/obstacle_3.png', x, y)
+            super().__init__(':/obstacle_3', x, y)
         elif health == 2:
-            super().__init__('../images/obstacle_2.png', x, y)
+            super().__init__(':/obstacle_2', x, y)
         elif health == 1:
-            super().__init__('../images/obstacle_1.png', x, y)
+            super().__init__(':/obstacle_1', x, y)
         else:
-            super().__init__('../images/obstacle_inf.png', x, y)
+            super().__init__(':/obstacle_inf', x, y)
 
 
 class Bomb(GraphicsItem):
     def __init__(self, x, y):
-        super().__init__('../images/bomb.png', x, y)
+        super().__init__(':/bomb', x, y)
 
 
 class Fire(GraphicsItem):
     def __init__(self, x, y):
-        super().__init__('../images/fire.png', x, y)
+        super().__init__(':/fire', x, y)
 
 
 class Character(GraphicsItem):
@@ -81,27 +81,27 @@ class Character(GraphicsItem):
 
 class Player(GraphicsItem):
     def __init__(self, x, y):
-        super().__init__('../images/bomberman.png', x, y)
+        super().__init__(':/bomberman', x, y)
 
 
 class Agent(GraphicsItem):
     def __init__(self, x, y, typeof):
         if typeof >= 3:
-            super().__init__('../images/bGhost.png', x, y)
+            super().__init__(':/bGhost', x, y)
         else:
-            super().__init__('../images/smallGhost.png', x, y)
+            super().__init__(':/smallGhost', x, y)
 
 
 class Powerup(GraphicsItem):
     def __init__(self, x, y, typeof):
         if typeof == 1:
-            super().__init__('../images/health.png', x, y)
+            super().__init__(':/health', x, y)
         elif typeof == 2:
-            super().__init__('../images/5x5.png', x, y)
+            super().__init__(':/5x5', x, y)
         elif typeof == 3:
-            super().__init__('../images/7x7.png', x, y)
+            super().__init__(':/7x7', x, y)
         elif typeof == 4:
-            super().__init__('../images/double.png', x, y)
+            super().__init__(':/double', x, y)
 
 
 class GraphicsScene(QGraphicsScene):
@@ -197,23 +197,23 @@ class MainWindow(QMainWindow):
         self.mainWidget = MainWidgets()
         self.setCentralWidget(self.mainWidget)
 
-        self.l_button = QPushButton(QIcon('../images/left_arrow.png'), '', self)
+        self.l_button = QPushButton(QIcon(':/left_arrow'), '', self)
         self.l_button.setGeometry((cut_size[1] - 3) * tile_size + 10,
                                   (cut_size[0] - 1) * tile_size + 10,
                                   tile_size, tile_size)
-        self.r_button = QPushButton(QIcon('../images/right_arrow.png'), '', self)
+        self.r_button = QPushButton(QIcon(':/right_arrow'), '', self)
         self.r_button.setGeometry((cut_size[1] - 1) * tile_size + 10,
                                   (cut_size[0] - 1) * tile_size + 10,
                                   tile_size, tile_size)
-        self.d_button = QPushButton(QIcon('../images/bottom_arrow.png'), '', self)
+        self.d_button = QPushButton(QIcon(':/bottom_arrow'), '', self)
         self.d_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
                                   (cut_size[0]) * tile_size + 10,
                                   tile_size, tile_size)
-        self.u_button = QPushButton(QIcon('../images/top_arrow.png'), '', self)
+        self.u_button = QPushButton(QIcon(':/top_arrow'), '', self)
         self.u_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
                                   (cut_size[0] - 2) * tile_size + 10,
                                   tile_size, tile_size)
-        self.b_button = QPushButton(QIcon('../images/bomb.png'), '', self)
+        self.b_button = QPushButton(QIcon(':/bomb'), '', self)
         self.b_button.setGeometry((cut_size[1] - 2) * tile_size + 10,
                                   (cut_size[0] - 1) * tile_size + 10,
                                   tile_size, tile_size)
