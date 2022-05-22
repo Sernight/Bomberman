@@ -1,0 +1,24 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file alias="4x4">images/4x4.png</file>
+    <file alias="5x5">images/5x5.png</file>
+    <file alias="7x7">images/7x7.png</file>
+    <file alias="bGhost">images/bGhost.png</file>
+    <file alias="bomb">images/bomb.png</file>
+    <file alias="bomberman">images/bomberman.png</file>
+    <file alias="bottom_arrow">images/bottom_arrow.png</file>
+    <file alias="dirt">images/dirt.png</file>
+    <file alias="double">images/double.png</file>
+    <file alias="fire">images/fire.png</file>
+    <file alias="health">images/health.png</file>
+    <file alias="left_arrow">images/left_arrow.png</file>
+    <file alias="obstacle">images/obstacle.png</file>
+    <file alias="obstacle_1">images/obstacle_1.png</file>
+    <file alias="obstacle_2">images/obstacle_2.png</file>
+    <file alias="obstacle_3">images/obstacle_3.png</file>
+    <file alias="obstacle_inf">images/obstacle_inf.png</file>
+    <file alias="right_arrow">images/right_arrow.png</file>
+    <file alias="smallGhost">images/smallGhost.png</file>
+    <file alias="top_arrow">images/top_arrow.png</file>
+</qresource>
+</RCC>

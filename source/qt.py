@@ -18,6 +18,8 @@ from PySide2.QtWidgets import (
 import main as terminal
 from configuration import *
 
+import resources.py
+
 
 class GraphicsItem(QGraphicsItem):
     def __init__(self, pixmap_path: str, x: int = 0, y: int = 0):
