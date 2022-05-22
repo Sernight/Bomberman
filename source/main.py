@@ -50,8 +50,35 @@ class Plane:
             cut_x = (center[1] - int(cut_size[1] / 2), center[1] + int(cut_size[1] / 2) + 1)
 
         return str(merged_plane[cut_y[0]:cut_y[1], cut_x[0]:cut_x[1]]) \
-               + f'\nHP: {self.player.health}\t|\t Remaining ghosts: {agents_count}' \
+               + f'\nHP: {self.player.health}\t\t\t\tRemaining ghosts: {agents_count}' \
                + "\nh - add 1 hp\ne - extent bomb to 4\nf - extent bomb to 5\nd - add damage of bomb"
+
+    def get_plane(self):
+        global cut_size, agents_count
+
+        merged_plane = np.copy(self.character_plane)
+        for ind, obj in np.ndenumerate(self.object_plane):
+            y, x = ind
+            if isinstance(merged_plane[y][x], EmptyTile):
+                merged_plane[y][x] = self.object_plane[y][x]
+
+        # cutting fragment of map
+        center = (self.player.pos[0], self.player.pos[1])
+        if center[0] - int(cut_size[0] / 2) < 0:
+            cut_y = (0, cut_size[0])
+        elif center[0] + int(cut_size[0] / 2) >= merged_plane.shape[0]:
+            cut_y = (merged_plane.shape[0] - cut_size[0], merged_plane.shape[0])
+        else:
+            cut_y = (center[0] - int(cut_size[0] / 2), center[0] + int(cut_size[0] / 2) + 1)
+
+        if center[1] - int(cut_size[1] / 2) < 0:
+            cut_x = (0, cut_size[1])
+        elif center[1] + int(cut_size[1] / 2) >= merged_plane.shape[1]:
+            cut_x = (merged_plane.shape[1] - cut_size[1], merged_plane.shape[1])
+        else:
+            cut_x = (center[1] - int(cut_size[1] / 2), center[1] + int(cut_size[1] / 2) + 1)
+
+        return self.object_plane[cut_y[0]:cut_y[1], cut_x[0]:cut_x[1]], cut_y, cut_x
 
     def update(self):
         global agents_count
@@ -345,23 +372,39 @@ def agent_handler(plane: Plane):
         sleep(0.5)
 
 
-def main():
-    atexit.register(set_normal_term)
-    set_curses_term()
-    np.set_printoptions(threshold=np.inf, linewidth=125)
-    plane = Plane(map_size[0], map_size[1])
-    kb_thread = threading.Thread(target=keyboard_handler, args=[plane])
-    kb_thread.daemon = True
-    kb_thread.start()
-    agents_thread = threading.Thread(target=agent_handler, args=[plane])
-    agents_thread.daemon = True
-    agents_thread.start()
-    while True:
-        os.system('clear')
-        plane.update()
-        print(plane)
-        sleep(0.1)
+class Main:
+    def __init__(self):
+        atexit.register(set_normal_term)
+        set_curses_term()
+        np.set_printoptions(threshold=np.inf, linewidth=125)
+        self.plane = Plane(map_size[0], map_size[1])
+        kb_thread = threading.Thread(target=keyboard_handler, args=[self.plane])
+        kb_thread.daemon = True
+        kb_thread.start()
+        agents_thread = threading.Thread(target=agent_handler, args=[self.plane])
+        agents_thread.daemon = True
+        agents_thread.start()
+
+    def main(self):
+        while True:
+            os.system('clear')
+            self.plane.update()
+            print(self.plane)
+            sleep(0.1)
+
+    def update_plane(self):
+        self.plane.update()
+
+    def get_object_plane(self):
+        return self.plane.object_plane
+
+    def get_player(self):
+        return self.plane.player
+
+    def get_agents(self):
+        return self.plane.agents
 
 
 if __name__ == '__main__':
-    main()
+    main = Main()
+    main.main()

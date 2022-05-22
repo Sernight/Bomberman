@@ -8,3 +8,6 @@ agents_density = 0.1
 powerup_density = 0.3
 
 planting_density = 0.1
+
+# pyside
+tile_size = 40
