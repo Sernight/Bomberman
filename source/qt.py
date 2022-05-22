@@ -104,7 +104,7 @@ class Powerup(GraphicsItem):
 
 
 class GraphicsScene(QGraphicsScene):
-    def __init__(self, width: int = 820, height: int = 500):
+    def __init__(self, width: int, height: int):
         super().__init__(0, 0, width, height)
         self.scene_width = width
         self.scene_height = height
@@ -141,6 +141,11 @@ class MainWidgets(QWidget):
         _layout.addWidget(self.view)
         self.setLayout(_layout)
 
+        self.draw_scene()
+
+        self.scene.update()
+
+    def draw_scene(self):
         # add solid objects, bombs and fire
         plane, offset_y, offset_x = self.plane.get_plane()
         for ind, obj in np.ndenumerate(plane):
@@ -167,8 +172,6 @@ class MainWidgets(QWidget):
         # add player
         self.scene.addItem(Player((self.plane.player.pos[1] - offset_x[0]) * tile_size,
                                   (self.plane.player.pos[0] - offset_y[0]) * tile_size))
-
-        self.scene.update()
 
 
 class MainWindow(QMainWindow):
